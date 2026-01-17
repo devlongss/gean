@@ -1,4 +1,4 @@
-# Gean - Go Lean Ethereum Client
+# Gean 
 
 A Go implementation of the Lean Ethereum consensus protocol.
 
