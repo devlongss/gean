@@ -4,7 +4,7 @@ A Go implementation of the Lean Ethereum consensus protocol.
 
 ## Overview
 
-Gean is the first Go-based Lean Ethereum consensus client, implementing the next-generation Ethereum consensus layer with post-quantum security, fast finality, and enhanced decentralization.
+Gean is a Lean Ethereum consensus client, implementing the next-generation Ethereum consensus layer with post-quantum security, fast finality, and enhanced decentralization.
 
 ## Getting Started
 
