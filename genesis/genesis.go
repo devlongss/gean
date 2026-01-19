@@ -41,7 +41,8 @@ func GenerateGenesis(genesisTime uint64, validators []types.Validator) *types.St
 	}
 
 	// Bitlists need a sentinel byte (0x01) to be valid non-empty
-	emptyBitlist := []byte{0x01}
+	justifiedSlots := []byte{0x01}
+	justificationVotes := []byte{0x01}
 
 	// Assemble and return the full genesis state
 	return &types.State{
@@ -51,9 +52,9 @@ func GenerateGenesis(genesisTime uint64, validators []types.Validator) *types.St
 		LatestJustified:    defaultCheckpoint,
 		LatestFinalized:    defaultCheckpoint,
 		HistoricalRoots:    []types.Root{},
-		JustifiedSlots:     emptyBitlist,
+		JustifiedSlots:     justifiedSlots,
 		Validators:         validators,
 		JustificationRoots: []types.Root{},
-		JustificationVotes: emptyBitlist,
+		JustificationVotes: justificationVotes,
 	}
 }
