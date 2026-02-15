@@ -2,11 +2,12 @@ use leansig::signature::SignatureScheme;
 use leansig::signature::generalized_xmss::instantiations_poseidon_top_level::lifetime_2_to_the_32::hashing_optimized::SIGTopLevelTargetSumLifetime32Dim64Base8;
 use rand::{SeedableRng,rngs::StdRng};
 use std::ptr;
+use std::slice;
+use ssz::Decode;
 
 pub type LeanSignatureScheme = SIGTopLevelTargetSumLifetime32Dim64Base8;
 pub type LeanPublicKey = <LeanSignatureScheme as SignatureScheme>::PublicKey;
 pub type LeanSecretKey = <LeanSignatureScheme as SignatureScheme>::SecretKey;
-
 
 pub struct SecretKey {
     pub inner: LeanSecretKey,
@@ -36,7 +37,7 @@ impl SecretKey {
 /// FFI: Exposed for Go (cgo) interoperability.
 ///
 /// # Safety
-/// - `ptr` must be a valid pointer to `len` bytes.
+/// - returned `ptr` must be a valid pointer to Keypair.
 /// - Caller is responsible for freeing returned memory.
 
 #[unsafe(no_mangle)]
@@ -46,44 +47,47 @@ pub unsafe extern "C" fn leansig_keypair_generate(
     num_active_epochs: usize,
 ) -> *mut Keypair {
     let mut rng = StdRng::seed_from_u64(seed);
-    
-    let (pk, sk) = <LeanSignatureScheme as SignatureScheme>::key_gen(&mut rng, activation_epoch, num_active_epochs);
-    
+
+    let (pk, sk) = <LeanSignatureScheme as SignatureScheme>::key_gen(
+        &mut rng,
+        activation_epoch,
+        num_active_epochs,
+    );
+
     let public_key = PublicKey::new(pk);
     let secret_key = SecretKey::new(sk);
-    
+
     let keypair = Box::new(Keypair {
         public_key,
         secret_key,
     });
-    
+
     Box::into_raw(keypair)
 }
 
 // Get a pointer to the public key from a keypair
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn leansig_keypair_get_public_key(keypair: *const Keypair) -> *const PublicKey {
+pub unsafe extern "C" fn leansig_keypair_get_public_key(
+    keypair: *const Keypair,
+) -> *const PublicKey {
     if keypair.is_null() {
-           return ptr::null();
+        return ptr::null();
     }
-    
-    unsafe {
-         &(*keypair).public_key
-    }
+
+    unsafe { &(*keypair).public_key }
 }
 
 // Get a pointer to the secret key from a keypair
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn leansig_keypair_get_private_key(keypair: *const Keypair) -> *const SecretKey {
+pub unsafe extern "C" fn leansig_keypair_get_private_key(
+    keypair: *const Keypair,
+) -> *const SecretKey {
     if keypair.is_null() {
-           return ptr::null();
+        return ptr::null();
     }
-    
-    unsafe {
-         &(*keypair).secret_key
-    }
-}
 
+    unsafe { &(*keypair).secret_key }
+}
 
 /// FFI: Frees a heap-allocated XMSS `Keypair`.
 ///
@@ -103,5 +107,42 @@ pub unsafe extern "C" fn leansig_keypair_free(key_pair: *mut Keypair) {
         unsafe {
             let _ = Box::from_raw(key_pair);
         }
+    }
+}
+
+// Reconstruct a key pair from SSZ-encoded secret key and public key
+// Returns a pointer to the KeyPair or null pointer on error
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn leansig_keypair_from_ssz_bytes(
+    secret_key_ptr: *const u8,
+    secret_key_len: usize,
+    public_key_ptr: *const u8,
+    public_key_len: usize,
+) -> *mut Keypair {
+    if secret_key_ptr.is_null() || public_key_ptr.is_null() {
+        return ptr::null_mut()
+    }
+    
+    unsafe  {
+        let sk_slice = slice::from_raw_parts(secret_key_ptr, secret_key_len);
+        let pk_slice = slice::from_raw_parts(public_key_ptr, public_key_len);
+        
+        let pk: LeanPublicKey = match LeanPublicKey::from_ssz_bytes(pk_slice) {
+            Ok(key) => key,
+            Err(_) => return ptr::null_mut(),
+        };
+        
+        
+        let sk: LeanSecretKey = match LeanSecretKey::from_ssz_bytes(sk_slice) {
+            Ok(key) => key,
+            Err(_) => return ptr::null_mut(),
+        };
+        
+        let keypair = Box::new(Keypair {
+            public_key: PublicKey::new(pk),
+            secret_key: SecretKey::new(sk)
+        });
+        
+        Box::into_raw(keypair)
     }
 }

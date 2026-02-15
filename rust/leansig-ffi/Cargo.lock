@@ -994,15 +994,6 @@ dependencies = [
 [[package]]
 name = "leansig"
 version = "0.1.0"
-dependencies = [
- "ethereum_ssz",
- "leansig 0.1.0 (git+https://github.com/leanEthereum/leanSig?rev=f10dcbefac2502d356d93f686e8b4ecd8dc8840a)",
- "rand 0.9.2",
-]
-
-[[package]]
-name = "leansig"
-version = "0.1.0"
 source = "git+https://github.com/leanEthereum/leanSig?rev=f10dcbefac2502d356d93f686e8b4ecd8dc8840a#f10dcbefac2502d356d93f686e8b4ecd8dc8840a"
 dependencies = [
  "dashmap",
@@ -1019,6 +1010,15 @@ dependencies = [
  "serde",
  "sha3",
  "thiserror",
+]
+
+[[package]]
+name = "leansig-ffi"
+version = "0.1.0"
+dependencies = [
+ "ethereum_ssz",
+ "leansig",
+ "rand 0.9.2",
 ]
 
 [[package]]
